@@ -1,6 +1,7 @@
 import time
 import requests
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 from mangum import Mangum
 
 app = FastAPI(title="NGL Sender API", version="1.0.0")
@@ -35,16 +36,27 @@ def send_ngl_message(username: str, message: str) -> bool:
 def home():
     return {
         "status": "online",
-        "message": "NGL Sender API is running!",
-        "usage": "/send?username=TARGET&pesan=PESANMU&jumlah=3&jeda=0&apikey=hammudhabibii_"
+        "message": "NGL Sender API is running smoothly!",
+        "author": "hammudhabibii_",
+        "cara_penggunaan": {
+            "endpoint": "/send",
+            "parameter_wajib": {
+                "username": "Username target NGL (contoh: johndoe)",
+                "pesan": "Isi pesan rahasia yang ingin dikirim",
+                "jumlah": "Berapa banyak pesan yang mau dikirim (1-50)",
+                "jeda": "Waktu jeda antar pesan dalam detik (bisa 0 untuk tanpa jeda)",
+                "apikey": "API Key akses kamu"
+            },
+            "contoh_url": "/send?username=target&pesan=halo&jumlah=3&jeda=0&apikey=hammudhabibii_"
+        }
     }
 
 @app.get("/send")
 def send_messages(
     username: str = Query(..., description="Username NGL target"),
     pesan: str = Query(..., description="Pesan yang ingin dikirim"),
-    jumlah: int = Query(1, ge=1, le=50, description="Jumlah pengiriman (maks 50 untuk mencegah timeout serverless)"),
-    jeda: float = Query(0.5, ge=0, le=5, description="Jeda waktu antar pengiriman dalam detik (bisa 0 untuk tanpa jeda)"),
+    jumlah: int = Query(1, ge=1, le=50, description="Jumlah pengiriman (maks 50)"),
+    jeda: float = Query(0.5, ge=0, le=5, description="Jeda waktu antar pengiriman dalam detik (0 = tanpa jeda)"),
     apikey: str = Query(..., description="API Key autentikasi")
 ):
     # Validasi API Key
@@ -64,7 +76,7 @@ def send_messages(
             fail_count += 1
             details.append({"index": i, "status": "failed"})
         
-        # Eksekusi jeda hanya jika jeda lebih besar dari 0 dan bukan iterasi terakhir
+        # Eksekusi jeda hanya jika jeda > 0 dan bukan iterasi terakhir
         if i < jumlah and jeda > 0:
             time.sleep(jeda)
 
