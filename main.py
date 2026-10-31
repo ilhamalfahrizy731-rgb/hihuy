@@ -1,12 +1,10 @@
-import time
-import requests
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
 from mangum import Mangum
+import requests
+import time
 
 app = FastAPI(title="NGL Sender API", version="1.0.0")
 
-# API Key rahasia sesuai permintaanmu
 VALID_API_KEY = "hammudhabibii_"
 
 def send_ngl_message(username: str, message: str) -> bool:
@@ -38,57 +36,43 @@ def home():
         "status": "online",
         "message": "NGL Sender API is running smoothly!",
         "author": "hammudhabibii_",
-        "cara_penggunaan": {
-            "endpoint": "/send",
-            "parameter_wajib": {
-                "username": "Username target NGL (contoh: johndoe)",
-                "pesan": "Isi pesan rahasia yang ingin dikirim",
-                "jumlah": "Berapa banyak pesan yang mau dikirim (1-50)",
-                "jeda": "Waktu jeda antar pesan dalam detik (bisa 0 untuk tanpa jeda)",
-                "apikey": "API Key akses kamu"
-            },
-            "contoh_url": "/send?username=target&pesan=halo&jumlah=3&jeda=0&apikey=hammudhabibii_"
-        }
+        "usage": "/send?username=TARGET&pesan=PESAN&jumlah=5&jeda=0&apikey=hammudhabibii_"
     }
 
 @app.get("/send")
 def send_messages(
     username: str = Query(..., description="Username NGL target"),
     pesan: str = Query(..., description="Pesan yang ingin dikirim"),
-    jumlah: int = Query(1, ge=1, le=50, description="Jumlah pengiriman (maks 50)"),
-    jeda: float = Query(0.5, ge=0, le=5, description="Jeda waktu antar pengiriman dalam detik (0 = tanpa jeda)"),
+    jumlah: int = Query(1, ge=1, le=100, description="Jumlah pengiriman (maks 100)"),
+    jeda: float = Query(0, ge=0, le=5, description="Jeda waktu antar pengiriman dalam detik"),
     apikey: str = Query(..., description="API Key autentikasi")
 ):
-    # Validasi API Key
     if apikey != VALID_API_KEY:
         raise HTTPException(status_code=401, detail="API Key salah atau tidak valid!")
 
     success_count = 0
     fail_count = 0
-    details = []
 
     for i in range(1, jumlah + 1):
-        is_success = send_ngl_message(username, pesan)
-        if is_success:
+        if send_ngl_message(username, pesan):
             success_count += 1
-            details.append({"index": i, "status": "success"})
         else:
             fail_count += 1
-            details.append({"index": i, "status": "failed"})
         
-        # Eksekusi jeda hanya jika jeda > 0 dan bukan iterasi terakhir
         if i < jumlah and jeda > 0:
             time.sleep(jeda)
 
+    # Format JSON yang jauh lebih bersih dan rapi tanpa detail beruntun
     return {
-        "status": "completed",
-        "target": f"@{username}",
-        "total_requested": jumlah,
-        "success": success_count,
-        "failed": fail_count,
-        "delay_seconds": jeda,
-        "details": details
+        "status": "success",
+        "creator": "hammudhabibii_",
+        "data": {
+            "target": f"@{username}",
+            "total_sent": success_count,
+            "total_failed": fail_count,
+            "total_requested": jumlah,
+            "delay": f"{jeda}s"
+        }
     }
 
-# Handler untuk Serverless (Vercel / Netlify)
 handler = Mangum(app)
