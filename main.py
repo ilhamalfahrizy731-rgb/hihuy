@@ -36,10 +36,7 @@ def home():
         "status": "online",
         "message": "NGL Sender API is running smoothly!",
         "author": "hammudhabibii_",
-        "endpoints": {
-            "send_message": "/send?username=TARGET&pesan=PESAN&jumlah=5&jeda=0&apikey=hammudhabibii_",
-            "check_account": "/check?username=TARGET&apikey=hammudhabibii_"
-        }
+        "usage": "/send?username=TARGET&pesan=PESAN&jumlah=5&jeda=0&apikey=hammudhabibii_"
     }
 
 @app.get("/send")
@@ -65,6 +62,7 @@ def send_messages(
         if i < jumlah and jeda > 0:
             time.sleep(jeda)
 
+    # Format JSON yang jauh lebih bersih dan rapi tanpa detail beruntun
     return {
         "status": "success",
         "creator": "hammudhabibii_",
@@ -76,43 +74,5 @@ def send_messages(
             "delay": f"{jeda}s"
         }
     }
-
-@app.get("/check")
-def check_account(
-    username: str = Query(..., description="Username NGL yang ingin dicek"),
-    apikey: str = Query(..., description="API Key autentikasi")
-):
-    if apikey != VALID_API_KEY:
-        raise HTTPException(status_code=401, detail="API Key salah atau tidak valid!")
-
-    profile_url = f"https://ngl.link/{username}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
-    try:
-        response = requests.get(profile_url, headers=headers, timeout=10)
-        
-        # Jika status 200, berarti halaman profil NGL ditemukan/aktif
-        if response.status_code == 200:
-            # Cek apakah isi HTML mengindikasikan akun tidak ditemukan (biasanya NGL mengembalikan teks tertentu atau redirect)
-            if "not found" in response.text.lower() or "page not found" in response.text.lower():
-                is_active = False
-            else:
-                is_active = True
-        else:
-            is_active = False
-
-        return {
-            "status": "success",
-            "creator": "hammudhabibii_",
-            "data": {
-                "username": f"@{username}",
-                "is_active": is_active,
-                "profile_url": profile_url
-            }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 handler = Mangum(app)
