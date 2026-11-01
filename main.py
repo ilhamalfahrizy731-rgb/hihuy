@@ -109,8 +109,7 @@ def check_account(
             "data": {
                 "username": f"@{username}",
                 "is_active": is_active,
-                "profile_url": profile_url,
-                "note": "Total inbox bersifat privat dan memerlukan login dashboard NGL."
+                "profile_url": profile_url
             }
         }
     except Exception as e:
